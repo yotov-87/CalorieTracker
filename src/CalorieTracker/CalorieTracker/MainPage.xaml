@@ -6,6 +6,12 @@
              x:Class="CalorieTracker.MainPage"
              BackgroundColor="{DynamicResource PageBackgroundColor}">
 
+    <ContentPage.Padding>
+        <OnPlatform x:TypeArguments="Thickness">
+            <On Platform="Android" Value="0,36,0,0" />
+        </OnPlatform>
+    </ContentPage.Padding>
+
     <BlazorWebView x:Name="blazorWebView" HostPage="wwwroot/index.html">
         <BlazorWebView.RootComponents>
             <RootComponent Selector="#app" ComponentType="{x:Type shared:Routes}" />
