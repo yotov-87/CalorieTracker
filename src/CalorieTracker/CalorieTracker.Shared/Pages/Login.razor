@@ -2,93 +2,115 @@
 @using System.ComponentModel.DataAnnotations
 @using System.Net.Http.Json
 @using CalorieTracker.Shared.DTOs
+@using CalorieTracker.Shared.Services
 @inject HttpClient Http
-@rendermode InteractiveAuto
+@inject ClientAuthStateService AuthState
+@implements IDisposable
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
 
-<PageTitle>@(isRegisterMode ? "Register" : "Sign In") - CalorieTracker</PageTitle>
+<PageTitle>@(AuthState.IsAuthenticated ? "Account" : (isRegisterMode ? "Register" : "Sign In")) - CalorieTracker</PageTitle>
 
 <div class="d-flex justify-content-center align-items-center py-4">
     <div class="card shadow-sm border-0" style="width: 100%; max-width: 420px; border-radius: 12px;">
         <div class="card-body p-4 p-md-5">
-            <h2 class="text-center mb-4 fw-bold">@(isRegisterMode ? "Create Account" : "Sign In")</h2>
-
-            @if (!string.IsNullOrEmpty(statusMessage))
+            @if (AuthState.IsAuthenticated)
             {
-                <div class="alert @(isError ? "alert-danger" : "alert-success") py-2" role="alert">
-                    @statusMessage
-                </div>
-            }
-
-            @if (!isRegisterMode)
-            {
-                <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
-                    <DataAnnotationsValidator />
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Email</label>
-                        <InputText @bind-Value="loginModel.Email" class="form-control" placeholder="Enter your email" />
-                        <ValidationMessage For="@(() => loginModel.Email)" class="text-danger small" />
+                <div class="text-center">
+                    <div class="alert alert-success mb-4" role="alert">
+                        <h4 class="alert-heading mb-1">
+                            Welcome, @(AuthState.CurrentUser?.FullName ?? AuthState.CurrentUser?.Email ?? "User")!
+                        </h4>
+                        <p class="mb-0 small">@AuthState.CurrentUser?.Email</p>
                     </div>
 
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between">
-                            <label class="form-label fw-semibold">Password</label>
-                            <a href="login" @onclick:preventDefault class="small text-decoration-none">Forgot password?</a>
-                        </div>
-                        <InputText @bind-Value="loginModel.Password" type="password" class="form-control" placeholder="Enter your password" />
-                        <ValidationMessage For="@(() => loginModel.Password)" class="text-danger small" />
-                    </div>
-
-                    <button type="submit" class="btn w-100 text-white fw-semibold py-2 mt-2"
-                            style="background-color: #05163d;" disabled="@isSubmitting">
-                        @(isSubmitting ? "Signing in..." : "Sign In")
+                    <button type="button" class="btn btn-outline-danger w-100 py-2 fw-semibold"
+                            @onclick="HandleLogoutAsync">
+                        Logout
                     </button>
-                </EditForm>
-
-                <div class="text-center mt-4 small">
-                    Don't have an account?
-                    <a href="login" @onclick="ToggleMode" @onclick:preventDefault class="fw-semibold">Create Account</a>
                 </div>
             }
             else
             {
-                <EditForm Model="registerModel" OnValidSubmit="HandleRegisterAsync" FormName="RegisterForm">
-                    <DataAnnotationsValidator />
+                <h2 class="text-center mb-4 fw-bold">@(isRegisterMode ? "Create Account" : "Sign In")</h2>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Name</label>
-                        <InputText @bind-Value="registerModel.FullName" class="form-control" placeholder="Enter your name" />
-                        <ValidationMessage For="@(() => registerModel.FullName)" class="text-danger small" />
+                @if (!string.IsNullOrEmpty(statusMessage))
+                {
+                    <div class="alert @(isError ? "alert-danger" : "alert-success") py-2" role="alert">
+                        @statusMessage
                     </div>
+                }
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Email</label>
-                        <InputText @bind-Value="registerModel.Email" class="form-control" placeholder="Enter your email" />
-                        <ValidationMessage For="@(() => registerModel.Email)" class="text-danger small" />
+                @if (!isRegisterMode)
+                {
+                    <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync" FormName="LoginForm">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            <InputText @bind-Value="loginModel.Email" class="form-control" placeholder="Enter your email" />
+                            <ValidationMessage For="@(() => loginModel.Email)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <label class="form-label fw-semibold">Password</label>
+                                <a href="login" @onclick:preventDefault class="small text-decoration-none">Forgot password?</a>
+                            </div>
+                            <InputText @bind-Value="loginModel.Password" type="password" class="form-control" placeholder="Enter your password" />
+                            <ValidationMessage For="@(() => loginModel.Password)" class="text-danger small" />
+                        </div>
+
+                        <button type="submit" class="btn w-100 text-white fw-semibold py-2 mt-2"
+                                style="background-color: #05163d;" disabled="@isSubmitting">
+                            @(isSubmitting ? "Signing in..." : "Sign In")
+                        </button>
+                    </EditForm>
+
+                    <div class="text-center mt-4 small">
+                        Don't have an account?
+                        <a href="login" @onclick="ToggleMode" @onclick:preventDefault class="fw-semibold">Create Account</a>
                     </div>
+                }
+                else
+                {
+                    <EditForm Model="registerModel" OnValidSubmit="HandleRegisterAsync" FormName="RegisterForm">
+                        <DataAnnotationsValidator />
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Password</label>
-                        <InputText @bind-Value="registerModel.Password" type="password" class="form-control" placeholder="Create a password" />
-                        <ValidationMessage For="@(() => registerModel.Password)" class="text-danger small" />
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Name</label>
+                            <InputText @bind-Value="registerModel.FullName" class="form-control" placeholder="Enter your name" />
+                            <ValidationMessage For="@(() => registerModel.FullName)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email</label>
+                            <InputText @bind-Value="registerModel.Email" class="form-control" placeholder="Enter your email" />
+                            <ValidationMessage For="@(() => registerModel.Email)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Password</label>
+                            <InputText @bind-Value="registerModel.Password" type="password" class="form-control" placeholder="Create a password" />
+                            <ValidationMessage For="@(() => registerModel.Password)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Confirm Password</label>
+                            <InputText @bind-Value="registerModel.ConfirmPassword" type="password" class="form-control" placeholder="Repeat your password" />
+                            <ValidationMessage For="@(() => registerModel.ConfirmPassword)" class="text-danger small" />
+                        </div>
+
+                        <button type="submit" class="btn w-100 text-white fw-semibold py-2 mt-2"
+                                style="background-color: #05163d;" disabled="@isSubmitting">
+                            @(isSubmitting ? "Creating account..." : "Create Account")
+                        </button>
+                    </EditForm>
+
+                    <div class="text-center mt-4 small">
+                        Already have an account?
+                        <a href="login" @onclick="ToggleMode" @onclick:preventDefault class="fw-semibold">Sign In</a>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Confirm Password</label>
-                        <InputText @bind-Value="registerModel.ConfirmPassword" type="password" class="form-control" placeholder="Repeat your password" />
-                        <ValidationMessage For="@(() => registerModel.ConfirmPassword)" class="text-danger small" />
-                    </div>
-
-                    <button type="submit" class="btn w-100 text-white fw-semibold py-2 mt-2"
-                            style="background-color: #05163d;" disabled="@isSubmitting">
-                        @(isSubmitting ? "Creating account..." : "Create Account")
-                    </button>
-                </EditForm>
-
-                <div class="text-center mt-4 small">
-                    Already have an account?
-                    <a href="login" @onclick="ToggleMode" @onclick:preventDefault class="fw-semibold">Sign In</a>
-                </div>
+                }
             }
         </div>
     </div>
@@ -102,6 +124,12 @@
 
     private LoginInputModel loginModel = new();
     private RegisterInputModel registerModel = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthState.OnChange += StateHasChanged;
+        await AuthState.InitializeAsync();
+    }
 
     private void ToggleMode()
     {
@@ -127,14 +155,15 @@
             var response = await Http.PostAsJsonAsync("/api/auth/login", request);
             var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
 
-            if (!response.IsSuccessStatusCode || result is null || !result.Success)
+            if (!response.IsSuccessStatusCode || result is null || !result.Success || string.IsNullOrWhiteSpace(result.Token))
             {
                 isError = true;
                 statusMessage = result?.Message ?? "Invalid email or password.";
                 return;
             }
 
-            statusMessage = result.Message ?? $"Signed in as {result.User?.Email ?? loginModel.Email}";
+            await AuthState.SetSessionAsync(result);
+            loginModel = new();
         }
         catch (Exception ex)
         {
@@ -165,14 +194,14 @@
             var response = await Http.PostAsJsonAsync("/api/auth/register", request);
             var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
 
-            if (!response.IsSuccessStatusCode || result is null || !result.Success)
+            if (!response.IsSuccessStatusCode || result is null || !result.Success || string.IsNullOrWhiteSpace(result.Token))
             {
                 isError = true;
                 statusMessage = result?.Message ?? "Registration failed.";
                 return;
             }
 
-            statusMessage = result.Message ?? $"Account created for {registerModel.Email}.";
+            await AuthState.SetSessionAsync(result);
             registerModel = new();
             isRegisterMode = false;
         }
@@ -185,6 +214,18 @@
         {
             isSubmitting = false;
         }
+    }
+
+    private async Task HandleLogoutAsync()
+    {
+        statusMessage = null;
+        isError = false;
+        await AuthState.LogoutAsync();
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= StateHasChanged;
     }
 
     public class LoginInputModel

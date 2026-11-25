@@ -18,6 +18,19 @@ namespace CalorieTracker
 
             // Add device-specific services used by the CalorieTracker.Shared project
             builder.Services.AddSingleton<IFormFactor, FormFactor>();
+            builder.Services.AddSingleton<ITokenStorageService, MauiTokenStorageService>();
+            builder.Services.AddTransient<BearerTokenHandler>();
+
+            builder.Services.AddScoped(sp =>
+            {
+                var handler = sp.GetRequiredService<BearerTokenHandler>();
+                handler.InnerHandler = new HttpClientHandler();
+
+                return new HttpClient(handler)
+                {
+                    BaseAddress = new Uri("https://localhost:7030/")
+                };
+            });
 
             builder.Services.AddMauiBlazorWebView();
 

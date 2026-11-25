@@ -8,10 +8,14 @@ namespace CalorieTracker.Web.Services;
 public class AuthService : IAuthService
 {
     private readonly CalorieTrackerAppDbContext _dbContext;
+    private readonly IJwtTokenService _jwtTokenService;
 
-    public AuthService(CalorieTrackerAppDbContext dbContext)
+    public AuthService(
+        CalorieTrackerAppDbContext dbContext,
+        IJwtTokenService jwtTokenService)
     {
         _dbContext = dbContext;
+        _jwtTokenService = jwtTokenService;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
@@ -42,10 +46,14 @@ public class AuthService : IAuthService
         _dbContext.Users.Add(user);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        var (token, expiresAtUtc) = _jwtTokenService.GenerateToken(user);
+
         return new AuthResponseDto
         {
             Success = true,
             Message = "Registration succeeded.",
+            Token = token,
+            ExpiresAtUtc = expiresAtUtc,
             User = new UserProfileDto
             {
                 Id = user.Id,
@@ -72,10 +80,14 @@ public class AuthService : IAuthService
             };
         }
 
+        var (token, expiresAtUtc) = _jwtTokenService.GenerateToken(user);
+
         return new AuthResponseDto
         {
             Success = true,
             Message = "Login succeeded.",
+            Token = token,
+            ExpiresAtUtc = expiresAtUtc,
             User = new UserProfileDto
             {
                 Id = user.Id,
