@@ -11,12 +11,11 @@
     <link rel="stylesheet" href="CalorieTracker.Web.styles.css" />
     <ImportMap />
     <link rel="icon" type="image/png" href="_content/CalorieTracker.Shared/favicon.png" />
-    <HeadOutlet @rendermode="InteractiveAuto" />
+    <HeadOutlet @rendermode="InteractiveWebAssembly" />
 </head>
 
 <body>
-    <Routes @rendermode="InteractiveAuto" />
-    <ReconnectModal />
+    <Routes />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
 </body>
 
